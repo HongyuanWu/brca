@@ -8,5 +8,7 @@ nna<-apply(data,1,function(x) sum(is.na(x)))/ncol(data)
 input<-data[-which(nna>0.5),]
 nna<-apply(input,2,function(x) sum(is.na(x)))/nrow(input)
 sort(nna)
+names(nna[nna>0.3])
+write.table(names(nna[nna>0.3]),file="high.missing.sample.txt",sep="\t",quote=F)
 input$BN190199
 input$BN190073
