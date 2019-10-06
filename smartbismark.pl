@@ -56,12 +56,12 @@ print OUT "#PBS -M Guo.Shicheng\@marshfieldresearch.org\n";
 print OUT "#PBS -m abe\n";
 print OUT "cd $curr_dir\n";    
 
-my $extractor="bismark_methylation_extractor --no_overlap --multicore $multicore --merge_non_CpG --bedGraph --cutoff 20 --ignore 1 --buffer_size 4G";
+my $extractor="bismark_methylation_extractor --no_overlap --multicore $multicore --merge_non_CpG --bedGraph --cutoff 10 --ignore 1 --buffer_size 4G";
 my $bismark="bismark --bowtie2 --non_directional --multicore $multicore --fastq -N 1"; 
 my $coverage2cytosine="coverage2cytosine --merge_CpG --gzip --genome_folder";
     
 print OUT "# fastq-dump --skip-technical --split-files --gzip $SRR\n";
-print OUT "# trim_galore --paired --phred$phred --clip_R1 3 --clip_R2 6 --fastqc --illumina $sample1\.fastq.gz $sample2\.fastq.gz --output_dir ../fastq_trim\n";
+print OUT "trim_galore --paired --stringency 3 --phred$phred --clip_R1 2 --clip_R2 2 --fastqc --illumina $sample1\.fastq.gz $sample2\.fastq.gz --output_dir ../fastq_trim\n";
 print OUT "$bismark --phred$phred-quals $BismarkRefereDb -1 ../fastq_trim/$sample1\_val_1.fq.gz -2 ../fastq_trim/$sample2\_val_2.fq.gz -o ../bam\n";
 print OUT "filter_non_conversion --paired ../bam/$sample1\_val_1_bismark_bt2_pe.bam\n";
 print OUT "# deduplicate_bismark --bam ../bam/$sample1\_val_1_bismark_bt2_pe.nonCG_filtered.bam\n";   
