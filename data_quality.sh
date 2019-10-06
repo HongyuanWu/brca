@@ -25,3 +25,6 @@ write.table(input,file="brca.hg19.bed",sep="\t",quote=F,col.names=F,row.names=F)
 cd ~/hpc/methylation/brca/19B0731C_MethylTarget/methyfreq
 bedtools sort -i brca.hg19.bed > brca.hg19.sort.bed
 bedtools merge -i brca.hg19.sort.bed > brca.hg19.sort.merge.bed
+
+bedtools intersect -wao -a brca.tcga.target.hg19.bed -b brca.hg19.sort.merge.bed | grep -v '\-1' | wc -l 
+bedtools intersect -wao -a brca.tcga.target.hg19.bed -b brca.hg19.sort.merge.bed | grep '\-1' | wc -l 
