@@ -76,7 +76,7 @@ for(i in 2:ncol(input)){
 temp<-na.omit(data.frame(y=input$y,x=input[,i]))
 fit1 <- (bayesglm(y ~ .,family=binomial,data=temp,na.action=na.omit))
 fit2<-t.test(x~y,data=temp)
-Pglm<-rbind(Pglm,summary(fit)$coefficients[2,])
+Pglm<-rbind(Pglm,summary(fit1)$coefficients[2,])
 Pt<-rbind(Pt,c(Z=fit2$statistic,fit2$estimate,P=fit2$p.value,CI=fit2$conf.int))
 
 CHR<-unlist(lapply(strsplit(colnames(input)[2:ncol(input)],"[.]"),function(x) x[1]))
@@ -90,24 +90,26 @@ Pglmt<-data.frame(CHR,START,END,Pglm)
 write.table(Ptt,file="Ptt.hg19.bed",sep="\t",quote=F,col.names=F,row.names=F)
 write.table(Pglmt,file="Pglmt.hg19.bed",sep="\t",quote=F,col.names=F,row.names=F)
 
+bedtools intersect -wao -a Ptt.hg19.bed -b brca.tcga.target.hg19.bed > Ptt.intersect.hg19.bed
+bedtools intersect -wao -a Pglmt.hg19.bed -b brca.tcga.target.hg19.bed > Pglmt.intersect.hg19.bed
 
-input<-data
-cv.error <- NULL
-k <- 5
-rlt1<-c()
-rlt2<-c()
-V<-c()
-for(i in 1:k){
-  index <- sample(1:nrow(input),round(0.9*nrow(input)))
-  train.cv <- input[index,]
-  test.cv <- input[-index,]
-  fit <- (bayesglm(Phen ~ LenMed+MethylHBV+Sex+Age,family=binomial,data=train.cv,na.action=na.omit))
-  pscores <- predict(fit,test.cv)
-  V=rbind(V,data.frame(test.cv$phen,pscores))
+# R plot for dual-y-axis figure
+setwd("//mcrfnas2/bigdata/Genetic/Projects/shg047/methylation/brca/19B0731C_MethylTarget/methyfreq")
+data<-read.table("Ptt.intersect.hg19.bed")
+head(data)
+for(i in unique(data$V13)){
+  png(paste(i,".png",sep=""))
+  temp<-subset(data,V13==i)
+  par(mar = c(5,5,2,5))
+  with(temp,plot(x=V3,y=-V4,type="l",main=i,xlab="Genomic Position (bp)",lwd=2,ylab="delta beta % (T-N)",col="red"))
+  par(new = T)
+  with(temp,plot(x=V3,y=-log(V7,10),pch=16, xlab=NA, cex=1.5,col="blue",ylab=NA,axes=F,ylim=c(0,max(-log(V7,10)))))
+  axis(side = 4)
+  mtext(side = 4, line = 3, expression(-log[10](italic(p))))
+  legend("bottomright",legend=c( "delta beta % (T-N)",expression(-log[10](italic(p)))),cex=1.5,lwd=2,lty=c(1,0), pch=c(NA, 16), col=c("red", "blue"),bty="n")
+  dev.off()
+  print(paste(i,mean(-temp$V4),mean(-log(temp$V7,10)),sep=" "))
 }
-V
-plotROC(data=V,cOutcome=1,predrisk=V$pscores)
-head(V)
 
 
 
