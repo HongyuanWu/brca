@@ -8,12 +8,32 @@ library("tidyverse")
 library("caret")
 library("MASS")
 
-
 # merge bismark cov to matrix 
+cd ~/hpc/methylation/brca/19B0731C_MethylTarget/methyfreq
 wget https://raw.githubusercontent.com/Shicheng-Guo/Gscutility/master/cov2matrix.pl
 perl cov2matrix.pl > brca.txt
 
-# check missing value for each cpg and each sample 
+######## methyPlot ################
+mkdir methplot
+awk -F '[\t:]' '{print $1,$2,$2+1}' OFS="\t" brca.txt | grep chr | bedtools intersect -wao -a - -b brca.tcga.target.hg19.bed | grep -v '\-1' | awk '{print $1":"$2,$7}' > brca.map
+
+data<-read.table("brca.txt",head=T,check.names=F)
+map<-read.table("brca.map",sep="")
+phen<-read.table("phen.txt",head=T)
+
+for(i in unique(map[,2])){
+temp<-t(data[match(map[map[,2] %in% i,1],rownames(data)),])
+class<-as.character(phen[match(rownames(temp),phen[,1]),3])
+position=unlist(lapply(strsplit(colnames(temp),":"),function(x) x[2]))
+temp<-cbind(temp,class)
+temp<-rbind(temp,position)
+temp[nrow(temp),ncol(temp)]<-""
+write.table(temp,file=paste("./methplot/",i,".methploter.input.txt",sep=""),sep="\t",quote=F,col.names=F,row.names=T)
+}
+######## methyPlot ################
+
+
+### check missing value for each cpg and each sample 
 data<-read.table("brca.txt",head=T,check.names=F)
 nna<-apply(data,1,function(x) sum(is.na(x)))/ncol(data)
 input<-data[-which(nna>0.5),]
@@ -42,8 +62,6 @@ bedtools merge -i brca.hg19.sort.bed > brca.hg19.sort.merge.bed
 
 bedtools intersect -wao -a brca.tcga.target.hg19.bed -b brca.hg19.sort.merge.bed | grep -v '\-1' | wc -l 
 bedtools intersect -wao -a brca.tcga.target.hg19.bed -b brca.hg19.sort.merge.bed | grep '\-1' | wc -l 
-
-
 
 # check missing value for each cpg and each sample 
 data<-read.table("brca.txt",head=T,check.names=F)
@@ -93,7 +111,7 @@ write.table(Pglmt,file="Pglmt.hg19.bed",sep="\t",quote=F,col.names=F,row.names=F
 bedtools intersect -wao -a Ptt.hg19.bed -b brca.tcga.target.hg19.bed > Ptt.intersect.hg19.bed
 bedtools intersect -wao -a Pglmt.hg19.bed -b brca.tcga.target.hg19.bed > Pglmt.intersect.hg19.bed
 
-# R plot for dual-y-axis figure
+## R plot for dual-y-axis figure
 setwd("//mcrfnas2/bigdata/Genetic/Projects/shg047/methylation/brca/19B0731C_MethylTarget/methyfreq")
 data<-read.table("Ptt.intersect.hg19.bed")
 head(data)
