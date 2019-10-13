@@ -3,7 +3,7 @@
 # bismark to alignment pair-end targeted methylation sequencing from multiplex pcr (targeted bisulfite sequencing)
 # Contact: Shicheng Guo
 # Version 1.4
-# Update: 10/02/2019
+# Update: 10/13/2019
 # smartbismark.pl 
 # USAGE: perl smartbismark.pl --input SraRunTable.txt --genome hg19 --phred=33 --server MCRI --queue shortq --BismarkRefereDb --submit 
 
@@ -57,21 +57,22 @@ print OUT "#PBS -m abe\n";
 print OUT "cd $curr_dir\n";    
 
 my $extractor="bismark_methylation_extractor --no_overlap --multicore $multicore --merge_non_CpG --bedGraph --cutoff 10 --ignore 1 --buffer_size 4G";
-my $bismark="bismark --bowtie2 --non_directional --multicore $multicore --fastq -N 1"; 
+# my $bismark="bismark --bowtie2 --non_directional --multicore $multicore --fastq -N 1"; 
+my $bismark="bismark --bowtie2 --multicore $multicore --fastq -N 1"; 
 my $coverage2cytosine="coverage2cytosine --merge_CpG --gzip --genome_folder";
     
 print OUT "# fastq-dump --skip-technical --split-files --gzip $SRR\n";
-print OUT "trim_galore --paired --stringency 3 --phred$phred --clip_R1 2 --clip_R2 2 --fastqc --illumina $sample1\.fastq.gz $sample2\.fastq.gz --output_dir ../fastq_trim\n";
+print OUT "# trim_galore --paired --stringency 3 --phred$phred --clip_R1 2 --clip_R2 2 --fastqc --illumina $sample1\.fastq.gz $sample2\.fastq.gz --output_dir ../fastq_trim\n";
 print OUT "$bismark --phred$phred-quals $BismarkRefereDb -1 ../fastq_trim/$sample1\_val_1.fq.gz -2 ../fastq_trim/$sample2\_val_2.fq.gz -o ../bam\n";
 print OUT "filter_non_conversion --paired ../bam/$sample1\_val_1_bismark_bt2_pe.bam\n";
-print OUT "# deduplicate_bismark --bam ../bam/$sample1\_val_1_bismark_bt2_pe.nonCG_filtered.bam\n";   
+print OUT "deduplicate_bismark --bam ../bam/$sample1\_val_1_bismark_bt2_pe.nonCG_filtered.bam\n";   
 print OUT "$extractor --comprehensive --output ../methyfreq  ../bam/$sample1\_val_1_bismark_bt2_pe.nonCG_filtered.bam\n";
-print OUT "# $coverage2cytosine $BismarkRefereDb -o ../bed/$sample1.mergeCpG.bed ../methyfreq/$sample1\_val_1_bismark_bt2_pe.nonCG_filtered.bismark.cov.gz\n";
-print OUT "# samtools sort -@ 8 ../bam/$sample1\_val_1_bismark_bt2_pe.nonCG_filtered.bam -o ../sortbam/$sample\_bismark_bt2_pe.sortc.bam\n";
-print OUT "# samtools index ../sortbam/$sample\_bismark_bt2_pe.sortc.bam\n";
-print OUT "# cd ../sortbam\n";
-print OUT "# perl ~/bin/samInfoPrep4Bam2Hapinfo.pl ~/oasis/db/hg19/hg19.cut10k.bed > saminfo.txt\n";
-print OUT "# perl ~/bin/bam2hapInfo2PBS.pl saminfo.txt submit bismark $chrLenhg19 $cpgPoshg19\n";
+print OUT "$coverage2cytosine $BismarkRefereDb -o ../bed/$sample1.mergeCpG.bed ../methyfreq/$sample1\_val_1_bismark_bt2_pe.nonCG_filtered.bismark.cov.gz\n";
+print OUT "samtools sort -@ 8 ../bam/$sample1\_val_1_bismark_bt2_pe.nonCG_filtered.bam -o ../sortbam/$sample\_bismark_bt2_pe.sortc.bam\n";
+print OUT "samtools index ../sortbam/$sample\_bismark_bt2_pe.sortc.bam\n";
+print OUT "cd ../sortbam\n";
+print OUT "perl ~/bin/samInfoPrep4Bam2Hapinfo.pl ~/oasis/db/hg19/hg19.cut10k.bed > saminfo.txt\n";
+print OUT "perl ~/bin/bam2hapInfo2PBS.pl saminfo.txt submit bismark $chrLenhg19 $cpgPoshg19\n";
 
 }elsif(scalar(@read) == 1){
 	my($sample,undef)=split /_1.fastq.gz|_R1.fastq.gz/,$read[0]; 	
